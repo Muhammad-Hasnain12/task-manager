@@ -1,0 +1,34 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Custom global settings */
+@layer base {
+  body {
+    @apply bg-background text-textPrimary antialiased font-sans selection:bg-brand/30;
+  }
+}
+
+/* Custom premium scrollbar matching dark/slate theme */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  @apply bg-background;
+}
+
+::-webkit-scrollbar-thumb {
+  @apply bg-borderLine rounded-full hover:bg-textMuted/50 transition-colors;
+}
+
+/* Remove default spin buttons from numeric inputs */
+input::-webkit-outer-spin-button,
+input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+input[type=number] {
+  -moz-appearance: textfield;
+}
