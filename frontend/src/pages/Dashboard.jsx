@@ -1,10 +1,3 @@
-/**
- * File: src/pages/Dashboard.jsx
- * Overall Purpose: Project dashboard view listing all current workspaces owned by the user.
- * Connections: Queries apiGetProjects, apiCreateProject, apiUpdateProject, and apiDeleteProject.
- * Bridges navigation to individual Kanban boards (/project/:id).
- */
-
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
@@ -141,14 +134,14 @@ const Dashboard = () => {
           onClick={handleOpenCreateModal}
           className="flex items-center justify-center gap-8 px-16 py-10 bg-brand hover:bg-brand-dark text-white rounded-8 text-14 font-semibold shadow-md transition-colors cursor-pointer self-start md:self-auto"
         >
-          <Plus className="w-18 h-18" />
+          <Plus className="w-18 h-18 text-white" />
           <span>New Project</span>
         </button>
       </div>
 
       {/* Global error banner */}
       {error && (
-        <div className="mb-24 px-16 py-12 bg-red-950/40 border border-red-800/60 rounded-8 text-red-200 text-14 font-medium flex items-center gap-8">
+        <div className="mb-24 px-16 py-12 bg-red-950/40 border border-red-800/60 rounded-8 text-red-200 text-14 font-medium flex items-center gap-8 animate-pulse">
           <AlertCircle className="w-18 h-18 text-red-400 flex-shrink-0" />
           <span>{error}</span>
         </div>
@@ -172,18 +165,25 @@ const Dashboard = () => {
       ) : projects.length === 0 ? (
         // --- UX REQUIREMENT: Clean, deliberate empty onboarding states ---
         <div className="flex-1 flex flex-col items-center justify-center border border-dashed border-borderLine rounded-16 py-64 px-24 text-center my-32">
-          <div className="w-64 h-64 rounded-full bg-zinc-900 border border-borderLine flex items-center justify-center text-textMuted mb-16">
-            <FolderGit2 className="w-32 h-32" />
+          {/* Custom TaskSpace Logo representation */}
+          <div className="w-48 h-48 rounded-12 bg-zinc-900 border border-borderLine flex items-center justify-center text-textMuted mb-16 shrink-0 shadow-sm">
+            <div className="flex gap-[3.5px]">
+              <div className="flex flex-col gap-[3.5px]">
+                <div className="w-[10px] h-[10px] bg-textMuted rounded-[2px]" />
+                <div className="w-[10px] h-[10px] bg-textMuted rounded-[2px]" />
+              </div>
+              <div className="w-[10px] h-[23.5px] bg-textMuted rounded-[2px]" />
+            </div>
           </div>
           <h3 className="text-18 font-bold text-textPrimary">No projects found</h3>
-          <p className="text-textSecondary text-14 max-w-400 mt-8 mb-24">
+          <p className="text-textSecondary text-14 max-w-400 mt-8 mb-24 leading-relaxed">
             Create your first workspace to start grouping tasks and planning milestones.
           </p>
           <button
             onClick={handleOpenCreateModal}
             className="flex items-center gap-8 px-16 py-10 bg-brand hover:bg-brand-dark text-white rounded-8 text-14 font-semibold shadow-md transition-colors cursor-pointer"
           >
-            <Plus className="w-18 h-18" />
+            <Plus className="w-18 h-18 text-white" />
             <span>Create a Project</span>
           </button>
         </div>
@@ -192,18 +192,21 @@ const Dashboard = () => {
           {projects.map(project => (
             <div 
               key={project._id}
-              className="bg-panel border border-borderLine hover:border-zinc-700 rounded-12 p-24 shadow-sm hover:shadow-md transition-all flex flex-col justify-between group"
+              className="bg-panel border border-borderLine hover:border-zinc-800 rounded-12 p-24 shadow-sm hover:shadow-md transition-all flex flex-col justify-between group"
             >
               {/* Card content */}
               <div className="text-left flex flex-col gap-12">
                 <div className="flex items-start justify-between gap-16">
-                  <h3 className="text-18 font-bold tracking-tight text-textPrimary group-hover:text-brand transition-colors line-clamp-1">
+                  <Link 
+                    to={`/project/${project._id}`}
+                    className="text-18 font-bold tracking-tight text-textPrimary group-hover:text-brand transition-colors line-clamp-1 leading-snug"
+                  >
                     {project.title}
-                  </h3>
+                  </Link>
                   {/* Outer Link */}
                   <Link 
                     to={`/project/${project._id}`}
-                    className="text-textMuted hover:text-textPrimary transition-colors opacity-0 group-hover:opacity-100 focus:opacity-100"
+                    className="text-textMuted hover:text-textPrimary transition-colors opacity-0 group-hover:opacity-100 focus:opacity-100 p-2 hover:bg-zinc-800 rounded-4"
                     title="Open Board"
                   >
                     <ExternalLink className="w-16 h-16" />
@@ -222,17 +225,17 @@ const Dashboard = () => {
                 </div>
                 
                 {/* Actions */}
-                <div className="flex items-center gap-12">
+                <div className="flex items-center gap-8">
                   <button
                     onClick={() => handleOpenEditModal(project)}
-                    className="text-textMuted hover:text-textPrimary transition-colors p-4 hover:bg-zinc-800 rounded-4 cursor-pointer"
+                    className="text-textMuted hover:text-textPrimary bg-zinc-900 border border-borderLine hover:border-zinc-700 p-8 rounded-6 transition-colors cursor-pointer"
                     title="Edit Metadata"
                   >
                     <Edit3 className="w-14 h-14" />
                   </button>
                   <button
                     onClick={() => handleDelete(project._id)}
-                    className="text-textMuted hover:text-red-400 transition-colors p-4 hover:bg-zinc-800 rounded-4 cursor-pointer"
+                    className="text-textMuted hover:text-red-400 bg-zinc-900 border border-borderLine hover:border-red-950/30 p-8 rounded-6 transition-colors cursor-pointer"
                     title="Delete Project"
                   >
                     <Trash2 className="w-14 h-14" />
@@ -249,7 +252,7 @@ const Dashboard = () => {
         <div className="fixed inset-0 z-50 flex items-center justify-center p-16">
           {/* Blur backdrop */}
           <div 
-            className="absolute inset-0 bg-background/60 backdrop-blur-sm"
+            className="absolute inset-0 bg-background/80 backdrop-blur-sm"
             onClick={() => setIsModalOpen(false)}
           ></div>
 
@@ -262,7 +265,7 @@ const Dashboard = () => {
               </h3>
               <button 
                 onClick={() => setIsModalOpen(false)}
-                className="text-textMuted hover:text-textPrimary transition-colors p-4 rounded-4"
+                className="text-textMuted hover:text-textPrimary transition-colors p-4 rounded-4 cursor-pointer"
               >
                 <X className="w-18 h-18" />
               </button>
@@ -310,7 +313,7 @@ const Dashboard = () => {
                   type="button"
                   onClick={() => setIsModalOpen(false)}
                   disabled={submitInFlight}
-                  className="px-16 py-10 bg-zinc-800 hover:bg-zinc-700 text-textSecondary hover:text-textPrimary rounded-8 text-14 font-semibold transition-colors cursor-pointer disabled:opacity-50"
+                  className="px-16 py-10 bg-transparent hover:bg-zinc-900/60 border border-borderLine text-textSecondary hover:text-textPrimary rounded-8 text-14 font-semibold transition-colors cursor-pointer disabled:opacity-50"
                 >
                   Cancel
                 </button>

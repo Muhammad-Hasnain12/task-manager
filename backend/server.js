@@ -48,7 +48,11 @@ app.use('/api/tasks', taskRoutes);
 // Use PORT from .env if available, otherwise default to 5000
 const PORT = process.env.PORT || 5000;
 
-// Start the server
-app.listen(PORT, () => {
-    console.log(`Server running on http://localhost:${PORT}`);
-});
+// Start the server only if we are not running in a production serverless environment (Vercel)
+if (process.env.NODE_ENV !== 'production' || !process.env.VERCEL) {
+    app.listen(PORT, () => {
+        console.log(`Server running on http://localhost:${PORT}`);
+    });
+}
+
+module.exports = app;

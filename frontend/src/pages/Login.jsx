@@ -1,14 +1,7 @@
-/**
- * File: src/pages/Login.jsx
- * Overall Purpose: Sign-in view for returning users.
- * Connections: Integrates with AuthContext for performing API logins. Redirects users
- * to dashboard upon verification or back to their requested page.
- */
-
 import { useState } from 'react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { FolderGit2, Mail, Lock } from 'lucide-react';
+import { Mail, Lock, Eye, EyeOff } from 'lucide-react';
 
 const Login = () => {
   const { login } = useAuth();
@@ -22,6 +15,7 @@ const Login = () => {
   // UI helper state variables
   const [error, setError] = useState('');
   const [inFlight, setInFlight] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
   // Read redirect destination (default to /dashboard)
   const from = location.state?.from?.pathname || '/dashboard';
@@ -74,15 +68,22 @@ const Login = () => {
     <div className="flex-1 flex flex-col items-center justify-center py-16">
       {/* Brand Header */}
       <div className="flex flex-col items-center gap-12 mb-32">
-        <div className="w-48 h-48 rounded-12 bg-brand flex items-center justify-center text-white">
-          <FolderGit2 className="w-28 h-28" />
+        {/* Custom TaskSpace Logo */}
+        <div className="w-48 h-48 rounded-12 bg-brand flex items-center justify-center text-white shrink-0 shadow-lg">
+          <div className="flex gap-[3.5px]">
+            <div className="flex flex-col gap-[3.5px]">
+              <div className="w-[10px] h-[10px] bg-white rounded-[2px]" />
+              <div className="w-[10px] h-[10px] bg-white rounded-[2px]" />
+            </div>
+            <div className="w-[10px] h-[23.5px] bg-white rounded-[2px]" />
+          </div>
         </div>
         <h2 className="text-24 font-bold tracking-tight mt-12 text-textPrimary">Sign In to TaskSpace</h2>
         <p className="text-textSecondary text-14">Welcome back. Enter your credentials to access your workspace.</p>
       </div>
 
       {/* Main Panel */}
-      <div className="w-full max-w-400 bg-panel border border-borderLine rounded-12 p-32 shadow-lg">
+      <div className="w-full max-w-400 bg-panel border border-borderLine rounded-12 p-32 shadow-xl">
         {/* Error notification banner */}
         {error && (
           <div className="mb-20 px-16 py-12 bg-red-950/40 border border-red-800/60 rounded-8 text-red-200 text-14 font-medium leading-normal animate-pulse">
@@ -124,14 +125,22 @@ const Login = () => {
               </span>
               <input
                 id="password"
-                type="password"
+                type={showPassword ? 'text' : 'password'}
                 required
                 disabled={inFlight}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="w-full bg-background border border-borderLine rounded-8 py-12 pl-48 pr-16 text-textPrimary placeholder:text-textMuted text-14 focus:outline-none focus:border-brand focus:ring-1 focus:ring-brand/40 transition-colors disabled:opacity-50"
-                placeholder="••••••••"
+                className="w-full bg-background border border-borderLine rounded-8 py-12 pl-48 pr-48 text-textPrimary placeholder:text-textMuted text-14 focus:outline-none focus:border-brand focus:ring-1 focus:ring-brand/40 transition-colors disabled:opacity-50"
+                placeholder="••••••••••••"
               />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                disabled={inFlight}
+                className="absolute inset-y-0 right-0 pr-16 flex items-center text-textMuted hover:text-textPrimary transition-colors cursor-pointer disabled:opacity-50"
+              >
+                {showPassword ? <EyeOff className="w-18 h-18" /> : <Eye className="w-18 h-18" />}
+              </button>
             </div>
           </div>
 
@@ -152,8 +161,17 @@ const Login = () => {
           </button>
         </form>
 
-        {/* Redirect toggle */}
-        <div className="mt-24 text-center text-14 text-textSecondary border-t border-borderLine pt-24">
+        {/* Divider line and Signup text */}
+        <div className="relative my-24">
+          <div className="absolute inset-0 flex items-center">
+            <div className="w-full border-t border-borderLine"></div>
+          </div>
+          <div className="relative flex justify-center text-12 uppercase">
+            <span className="bg-panel px-8 text-textMuted">or</span>
+          </div>
+        </div>
+
+        <div className="text-center text-14 text-textSecondary">
           New to TaskSpace?{' '}
           <Link to="/signup" className="text-brand hover:text-brand-light font-medium transition-colors">
             Create an account
