@@ -27,11 +27,17 @@ export default {
         '8': '8px',
         '12': '12px',
         '16': '16px',
+        '18': '18px',   // ADD - used everywhere for icon sizing
         '20': '20px',
         '24': '24px',
         '32': '32px',
+        '40': '40px',   // ADD - used for min-h-40
         '48': '48px',
         '64': '64px',
+        '100': '100px', // ADD - used for h-100 (textareas, skeletons)
+        '180': '180px', // ADD - used for h-180 (skeleton cards)
+        '400': '400px', // ADD - used for h-400/min-h-400 (board columns)
+        '500': '500px', // ADD - used for h-500/min-h-500 (board columns)
       },
       maxWidth: {
         '400': '400px',
