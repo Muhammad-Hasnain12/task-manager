@@ -1,0 +1,48 @@
+// User table - represents anyone who signs up
+model User {
+  id        Int      @id @default(autoincrement())
+  name      String
+  email     String   @unique
+  password  String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations: one User can own many Projects, and be assigned many Tasks
+  projects  Project[]
+  tasks     Task[]
+}
+
+// Project table - a workspace containing tasks
+model Project {
+  id          Int      @id @default(autoincrement())
+  title       String
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Foreign key relationship: every Project belongs to exactly one User (the owner)
+  ownerId     Int
+  owner       User     @relation(fields: [ownerId], references: [id])
+
+  // One Project can have many Tasks
+  // onDelete: Cascade means if a Project is deleted, all its Tasks are automatically deleted too
+  tasks       Task[]
+}
+
+// Task table - individual work items inside a project
+model Task {
+  id          Int       @id @default(autoincrement())
+  title       String
+  status      String    @default("todo")
+  dueDate     DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  // Foreign key: every Task belongs to exactly one Project
+  projectId   Int
+  project     Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  // Foreign key: a Task can optionally be assigned to a User
+  assignedToId Int?
+  assignedTo   User?    @relation(fields: [assignedToId], references: [id])
+}

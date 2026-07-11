@@ -1,26 +1,48 @@
-// Import our Task model
-const Task = require('../models/Task');
+// Import our shared Prisma client instance
+const prisma = require('../lib/prisma');
+
+// Helper function to map Prisma task records to the exact JSON response shape of the old Mongoose schema
+const mapTaskResponse = (task) => {
+    if (!task) return null;
+    return {
+        id: task.id,
+        title: task.title,
+        // Convert Prisma's database-friendly enum value "in_progress" (with underscore)
+        // back to "in-progress" (with hyphen) expected by the frontend.
+        status: task.status === 'in_progress' ? 'in-progress' : task.status,
+        project: task.projectId,        // Map projectId to "project"
+        assignedTo: task.assignedToId,  // Map assignedToId to "assignedTo"
+        dueDate: task.dueDate,
+        createdAt: task.createdAt,
+        updatedAt: task.updatedAt,
+    };
+};
 
 // CREATE a new task under a specific project
 const createTask = async (req, res) => {
     try {
-        // Get task details from the request body
         const { title, status, dueDate, projectId } = req.body;
 
-        // Create a new task document
-        const newTask = new Task({
-            title,
-            status,           // if not provided, schema default 'todo' kicks in
-            dueDate,
-            project: projectId,      // links this task to a specific project
-            assignedTo: req.user.id, // for now, auto-assign to whoever creates it
-        });
+        // Map status "in-progress" (with hyphen) from API request to "in_progress" (with underscore) for database enum
+        let dbStatus = undefined;
+        if (status) {
+            dbStatus = status === 'in-progress' ? 'in_progress' : status;
+        }
 
-        await newTask.save();
+        // Create the task record
+        const newTask = await prisma.task.create({
+            data: {
+                title,
+                status: dbStatus, // if undefined, schema default "todo" will be used
+                dueDate: dueDate ? new Date(dueDate) : null,
+                projectId: projectId,
+                assignedToId: req.user.id, // Auto-assign to task creator
+            },
+        });
 
         res.status(201).json({
             message: 'Task created successfully',
-            task: newTask,
+            task: mapTaskResponse(newTask),
         });
 
     } catch (error) {
@@ -31,45 +53,49 @@ const createTask = async (req, res) => {
 // GET all tasks belonging to a specific project
 const getTasksByProject = async (req, res) => {
     try {
-        // req.params.projectId comes from the URL itself (we'll set this up in routes)
-        // e.g. GET /api/tasks/project/12345 -> projectId = "12345"
         const { projectId } = req.params;
 
-        // Find every task where 'project' matches this projectId
-        const tasks = await Task.find({ project: projectId });
+        // Query database using Prisma
+        const tasks = await prisma.task.findMany({
+            where: { projectId: projectId },
+            orderBy: { createdAt: 'asc' },
+        });
 
-        res.status(200).json({ tasks });
+        // Map all task objects in response
+        res.status(200).json({
+            tasks: tasks.map(mapTaskResponse),
+        });
 
     } catch (error) {
         res.status(500).json({ message: 'Server error', error: error.message });
     }
 };
 
-// UPDATE a task's status (e.g. moving from 'todo' to 'in-progress')
+// UPDATE a task's status
 const updateTaskStatus = async (req, res) => {
     try {
-        // taskId comes from the URL, new status comes from the request body
         const { taskId } = req.params;
         const { status } = req.body;
 
-        // Find the task by ID and update its status
-        // { new: true } means: return the UPDATED document, not the old one
-        const updatedTask = await Task.findByIdAndUpdate(
-            taskId,
-            { status },
-            { new: true }
-        );
+        // Map status "in-progress" (with hyphen) from API request to "in_progress" (with underscore) for database enum
+        const dbStatus = status === 'in-progress' ? 'in_progress' : status;
 
-        if (!updatedTask) {
-            return res.status(404).json({ message: 'Task not found' });
-        }
+        // Perform the update
+        const updatedTask = await prisma.task.update({
+            where: { id: taskId },
+            data: { status: dbStatus },
+        });
 
         res.status(200).json({
             message: 'Task updated successfully',
-            task: updatedTask,
+            task: mapTaskResponse(updatedTask),
         });
 
     } catch (error) {
+        // Return 404 if the task doesn't exist
+        if (error.code === 'P2025') {
+            return res.status(404).json({ message: 'Task not found' });
+        }
         res.status(500).json({ message: 'Server error', error: error.message });
     }
 };
@@ -79,18 +105,20 @@ const deleteTask = async (req, res) => {
     try {
         const { taskId } = req.params;
 
-        const deletedTask = await Task.findByIdAndDelete(taskId);
-
-        if (!deletedTask) {
-            return res.status(404).json({ message: 'Task not found' });
-        }
+        // Perform the deletion
+        await prisma.task.delete({
+            where: { id: taskId },
+        });
 
         res.status(200).json({ message: 'Task deleted' });
+
     } catch (error) {
+        // Return 404 if task wasn't found
+        if (error.code === 'P2025') {
+            return res.status(404).json({ message: 'Task not found' });
+        }
         res.status(500).json({ message: 'Server error', error: error.message });
     }
 };
 
-
-// Export all Four functions
 module.exports = { createTask, getTasksByProject, updateTaskStatus, deleteTask };

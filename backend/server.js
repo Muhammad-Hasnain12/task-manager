@@ -4,18 +4,13 @@ const express = require('express');
 // Import cors - allows frontend (different port) to talk to this backend
 const cors = require('cors');
 
-// Import mongoose - lets us connect to and interact with MongoDB
-const mongoose = require('mongoose');
-
-
-const taskRoutes = require('./routes/taskRoutes');
-
 // Import dotenv and immediately call .config()
 require('dotenv').config();
 
 // Import our route files
 const authRoutes = require('./routes/authRoutes');
 const projectRoutes = require('./routes/projectRoutes');
+const taskRoutes = require('./routes/taskRoutes');
 
 // Create the express application
 const app = express();
@@ -25,15 +20,6 @@ app.use(cors());
 
 // Allow the server to understand JSON data sent in requests
 app.use(express.json());
-
-// Connect to MongoDB using the connection string stored in .env
-mongoose.connect(process.env.MONGO_URI)
-    .then(() => {
-        console.log('MongoDB connected successfully');
-    })
-    .catch((error) => {
-        console.log('MongoDB connection failed:', error.message);
-    });
 
 // A simple test route to confirm the server itself is working
 app.get('/', (req, res) => {
