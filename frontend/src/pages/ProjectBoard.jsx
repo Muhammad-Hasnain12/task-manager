@@ -74,7 +74,7 @@ const DroppableColumnContainer = ({ col, filteredTasks, handleOpenCreateModal, c
  */
 const DraggableTaskCard = ({ task, isOverdue, selectStyle, handleStatusChange, handleDeleteTask }) => {
   const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
-    id: task._id,
+    id: task.id,
     data: {
       status: task.status,
       task: task
@@ -118,7 +118,7 @@ const DraggableTaskCard = ({ task, isOverdue, selectStyle, handleStatusChange, h
         {/* Pipeline Status Selector styled as colored status pills */}
         <select
           value={task.status}
-          onChange={(e) => handleStatusChange(task._id, e.target.value)}
+          onChange={(e) => handleStatusChange(task.id, e.target.value)}
           className={`text-12 rounded-6 py-4 px-12 focus:outline-none cursor-pointer font-medium transition-all ${selectStyle}`}
           // Avoid triggering drag/listeners when clicking dropdown selector
           onPointerDown={(e) => e.stopPropagation()}
@@ -133,7 +133,7 @@ const DraggableTaskCard = ({ task, isOverdue, selectStyle, handleStatusChange, h
         <button
           onClick={(e) => {
             e.stopPropagation();
-            handleDeleteTask(task._id);
+            handleDeleteTask(task.id);
           }}
           onPointerDown={(e) => e.stopPropagation()}
           onMouseDown={(e) => e.stopPropagation()}
@@ -174,7 +174,7 @@ const ProjectBoard = () => {
         
         // Fetch all projects and extract this board's matching metadata
         const projectsData = await apiGetProjects();
-        const currentProject = projectsData.projects.find(p => p._id === projectId);
+        const currentProject = projectsData.projects.find(p => p.id === Number(projectId));
         
         if (!currentProject) {
           setError('The requested project does not exist or access was denied.');
@@ -241,7 +241,7 @@ const ProjectBoard = () => {
    * @param {string} newStatus - 'todo' | 'in-progress' | 'done'
    */
   const handleStatusChange = async (taskId, newStatus) => {
-    const taskToUpdate = tasks.find(t => t._id === taskId);
+    const taskToUpdate = tasks.find(t => t.id === Number(taskId) || t.id === taskId);
     if (!taskToUpdate || taskToUpdate.status === newStatus) return;
 
     const oldStatus = taskToUpdate.status;
@@ -251,7 +251,7 @@ const ProjectBoard = () => {
 
     // Optimistically update tasks state locally
     setTasks(prev =>
-      prev.map(t => (t._id === taskId ? { ...t, status: newStatus } : t))
+      prev.map(t => (t.id === Number(taskId) || t.id === taskId ? { ...t, status: newStatus } : t))
     );
     setError('');
 
@@ -259,7 +259,7 @@ const ProjectBoard = () => {
       const data = await apiUpdateTaskStatus(taskId, newStatus);
       // Synchronize state with backend response
       setTasks(prev =>
-        prev.map(t => (t._id === taskId ? data.task : t))
+        prev.map(t => (t.id === Number(taskId) || t.id === taskId ? data.task : t))
       );
     } catch (err) {
       // Rollback on failure
@@ -301,7 +301,7 @@ const ProjectBoard = () => {
     try {
       setError('');
       await apiDeleteTask(taskId);
-      setTasks(prev => prev.filter(t => t._id !== taskId));
+      setTasks(prev => prev.filter(t => t.id !== Number(taskId) && t.id !== taskId));
     } catch (err) {
       setError('Delete operation failed.');
     }
@@ -428,7 +428,7 @@ const ProjectBoard = () => {
 
                       return (
                         <DraggableTaskCard
-                          key={task._id}
+                          key={task.id}
                           task={task}
                           isOverdue={isOverdue}
                           selectStyle={selectStyle}

@@ -89,8 +89,8 @@ const Dashboard = () => {
       setSubmitInFlight(true);
       if (editingProject) {
         // Update Action
-        const data = await apiUpdateProject(editingProject._id, sanitizedTitle, sanitizedDesc);
-        setProjects(prev => prev.map(p => p._id === editingProject._id ? data.project : p));
+        const data = await apiUpdateProject(editingProject.id, sanitizedTitle, sanitizedDesc);
+        setProjects(prev => prev.map(p => p.id === editingProject.id ? data.project : p));
       } else {
         // Create Action
         const data = await apiCreateProject(sanitizedTitle, sanitizedDesc);
@@ -116,7 +116,7 @@ const Dashboard = () => {
     try {
       setError('');
       await apiDeleteProject(projectId);
-      setProjects(prev => prev.filter(p => p._id !== projectId));
+      setProjects(prev => prev.filter(p => p.id !== projectId));
     } catch (err) {
       setError(err.response?.data?.message || 'Delete operation failed.');
     }
@@ -191,21 +191,21 @@ const Dashboard = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-24">
           {projects.map(project => (
             <div 
-              key={project._id}
+              key={project.id}
               className="bg-panel border border-borderLine hover:border-zinc-800 rounded-12 p-24 shadow-sm hover:shadow-md transition-all flex flex-col justify-between group"
             >
               {/* Card content */}
               <div className="text-left flex flex-col gap-12">
                 <div className="flex items-start justify-between gap-16">
                   <Link 
-                    to={`/project/${project._id}`}
+                    to={`/project/${project.id}`}
                     className="text-18 font-bold tracking-tight text-textPrimary group-hover:text-brand transition-colors line-clamp-1 leading-snug"
                   >
                     {project.title}
                   </Link>
                   {/* Outer Link */}
                   <Link 
-                    to={`/project/${project._id}`}
+                    to={`/project/${project.id}`}
                     className="text-textMuted hover:text-textPrimary transition-colors opacity-0 group-hover:opacity-100 focus:opacity-100 p-2 hover:bg-zinc-800 rounded-4"
                     title="Open Board"
                   >
@@ -234,7 +234,7 @@ const Dashboard = () => {
                     <Edit3 className="w-14 h-14" />
                   </button>
                   <button
-                    onClick={() => handleDelete(project._id)}
+                    onClick={() => handleDelete(project.id)}
                     className="text-textMuted hover:text-red-400 bg-zinc-900 border border-borderLine hover:border-red-950/30 p-8 rounded-6 transition-colors cursor-pointer"
                     title="Delete Project"
                   >
