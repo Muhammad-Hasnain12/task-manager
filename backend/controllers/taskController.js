@@ -7,9 +7,7 @@ const mapTaskResponse = (task) => {
     return {
         id: task.id,
         title: task.title,
-        // Convert Prisma's database-friendly enum value "in_progress" (with underscore)
-        // back to "in-progress" (with hyphen) expected by the frontend.
-        status: task.status === 'in_progress' ? 'in-progress' : task.status,
+        status: task.status,
         project: task.projectId,        // Map projectId to "project"
         assignedTo: task.assignedToId,  // Map assignedToId to "assignedTo"
         dueDate: task.dueDate,
@@ -22,20 +20,16 @@ const mapTaskResponse = (task) => {
 const createTask = async (req, res) => {
     try {
         const { title, status, dueDate, projectId } = req.body;
-
-        // Map status "in-progress" (with hyphen) from API request to "in_progress" (with underscore) for database enum
-        let dbStatus = undefined;
-        if (status) {
-            dbStatus = status === 'in-progress' ? 'in_progress' : status;
-        }
+        // Convert string projectId (from JSON body) to an integer, since our schema uses Int IDs
+        const projectIdInt = parseInt(projectId, 10);
 
         // Create the task record
         const newTask = await prisma.task.create({
             data: {
                 title,
-                status: dbStatus, // if undefined, schema default "todo" will be used
+                status: status || undefined, // if undefined, schema default "todo" will be used
                 dueDate: dueDate ? new Date(dueDate) : null,
-                projectId: projectId,
+                projectId: projectIdInt,
                 assignedToId: req.user.id, // Auto-assign to task creator
             },
         });
@@ -54,10 +48,12 @@ const createTask = async (req, res) => {
 const getTasksByProject = async (req, res) => {
     try {
         const { projectId } = req.params;
+        // Convert string projectId (from URL params) to an integer
+        const projectIdInt = parseInt(projectId, 10);
 
         // Query database using Prisma
         const tasks = await prisma.task.findMany({
-            where: { projectId: projectId },
+            where: { projectId: projectIdInt },
             orderBy: { createdAt: 'asc' },
         });
 
@@ -75,15 +71,14 @@ const getTasksByProject = async (req, res) => {
 const updateTaskStatus = async (req, res) => {
     try {
         const { taskId } = req.params;
+        // Convert string taskId (from URL params) to an integer
+        const taskIdInt = parseInt(taskId, 10);
         const { status } = req.body;
-
-        // Map status "in-progress" (with hyphen) from API request to "in_progress" (with underscore) for database enum
-        const dbStatus = status === 'in-progress' ? 'in_progress' : status;
 
         // Perform the update
         const updatedTask = await prisma.task.update({
-            where: { id: taskId },
-            data: { status: dbStatus },
+            where: { id: taskIdInt },
+            data: { status },
         });
 
         res.status(200).json({
@@ -104,10 +99,12 @@ const updateTaskStatus = async (req, res) => {
 const deleteTask = async (req, res) => {
     try {
         const { taskId } = req.params;
+        // Convert string taskId (from URL params) to an integer
+        const taskIdInt = parseInt(taskId, 10);
 
         // Perform the deletion
         await prisma.task.delete({
-            where: { id: taskId },
+            where: { id: taskIdInt },
         });
 
         res.status(200).json({ message: 'Task deleted' });

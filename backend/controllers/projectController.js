@@ -20,7 +20,7 @@ const createProject = async (req, res) => {
         const { title, description } = req.body;
 
         // Create the project in PostgreSQL using Prisma
-        // req.user.id is a UUID injected by our protect middleware
+        // req.user.id is an integer injected by our protect middleware
         const newProject = await prisma.project.create({
             data: {
                 title,
@@ -62,12 +62,14 @@ const getProjects = async (req, res) => {
 const updateProject = async (req, res) => {
     try {
         const { projectId } = req.params;
+        // Convert string ID from URL params to an integer, since our schema uses Int IDs
+        const projectIdInt = parseInt(projectId, 10);
         const { title, description } = req.body;
 
         // Perform atomic update via Prisma
         // If a project is not found with that ID, Prisma throws a P2025 error which is caught in catch block
         const updatedProject = await prisma.project.update({
-            where: { id: projectId },
+            where: { id: projectIdInt },
             data: { title, description },
         });
 
@@ -88,11 +90,13 @@ const updateProject = async (req, res) => {
 const deleteProject = async (req, res) => {
     try {
         const { projectId } = req.params;
+        // Convert string ID from URL params to an integer
+        const projectIdInt = parseInt(projectId, 10);
 
         // Delete the project
         // Note: Task cascades are handled automatically by PostgreSQL due to schema "onDelete: Cascade"
         await prisma.project.delete({
-            where: { id: projectId },
+            where: { id: projectIdInt },
         });
 
         res.status(200).json({ message: 'Project deleted' });
