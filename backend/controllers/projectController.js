@@ -18,15 +18,24 @@ const mapProjectResponse = (project) => {
 // CREATE a new project
 const createProject = async (req, res) => {
     try {
-        const { title, description } = req.body;
+        const { title, description, ownerId } = req.body;
+        // Verify input sanity
+        if (!title) {
+            return res.status(400).json({ message: 'Project title is required' });
+        }
 
-        // Create the project in PostgreSQL using Prisma
-        // req.user.id is an integer injected by our protect middleware
+        // Enforce role-based project owner assignment check
+        let targetOwnerId = req.user.id;
+        if (req.user.role === 'admin' && ownerId) {
+            targetOwnerId = parseInt(ownerId, 10);
+        }
+
+        // Create database record using Prisma
         const newProject = await prisma.project.create({
             data: {
                 title,
                 description,
-                ownerId: req.user.id,
+                ownerId: targetOwnerId,
             },
         });
 

@@ -5,7 +5,8 @@ import {
   apiGetProjects, 
   apiCreateProject, 
   apiUpdateProject, 
-  apiDeleteProject 
+  apiDeleteProject,
+  apiGetAdminUsers
 } from '../services/api';
 import { Plus, Trash2, Edit3, ExternalLink, Calendar, X, AlertCircle, FolderGit2 } from 'lucide-react';
 
@@ -16,6 +17,11 @@ const Dashboard = () => {
   const [projects, setProjects] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+
+  // State variables for admin-only user impersonation / project assignment
+  const [users, setUsers] = useState([]);
+  const [selectedOwnerId, setSelectedOwnerId] = useState('all');
+  const [projectOwnerId, setProjectOwnerId] = useState('');
 
   // State variables for modals & inputs
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -29,7 +35,19 @@ const Dashboard = () => {
   // Fetch all projects on mount
   useEffect(() => {
     fetchProjects();
-  }, []);
+    if (user?.role === 'admin') {
+      fetchUsers();
+    }
+  }, [user]);
+
+  const fetchUsers = async () => {
+    try {
+      const data = await apiGetAdminUsers();
+      setUsers(data.users || []);
+    } catch (err) {
+      console.error('Could not retrieve system users list', err);
+    }
+  };
 
   /**
    * Action: Queries backend for user's projects.
@@ -54,6 +72,7 @@ const Dashboard = () => {
     setEditingProject(null);
     setProjectTitle('');
     setProjectDescription('');
+    setProjectOwnerId(selectedOwnerId !== 'all' ? selectedOwnerId : user?.id || '');
     setIsModalOpen(true);
   };
 
@@ -93,7 +112,7 @@ const Dashboard = () => {
         setProjects(prev => prev.map(p => p.id === editingProject.id ? data.project : p));
       } else {
         // Create Action
-        const data = await apiCreateProject(sanitizedTitle, sanitizedDesc);
+        const data = await apiCreateProject(sanitizedTitle, sanitizedDesc, user?.role === 'admin' ? projectOwnerId : undefined);
         setProjects(prev => [...prev, data.project]);
       }
       setIsModalOpen(false);
@@ -122,6 +141,12 @@ const Dashboard = () => {
     }
   };
 
+  // Filter projects client-side if user specifies selection
+  const filteredProjects = projects.filter(p => {
+    if (selectedOwnerId === 'all') return true;
+    return p.owner === Number(selectedOwnerId);
+  });
+
   return (
     <div className="flex-1 flex flex-col">
       {/* Upper header section */}
@@ -130,13 +155,34 @@ const Dashboard = () => {
           <h1 className="text-32 font-bold tracking-tight text-textPrimary m-0">Projects</h1>
           <p className="text-textSecondary text-14 mt-4">Manage your active workspaces and monitor project pipelines.</p>
         </div>
-        <button
-          onClick={handleOpenCreateModal}
-          className="flex items-center justify-center gap-8 px-16 py-10 bg-brand hover:bg-brand-dark text-white rounded-8 text-14 font-semibold shadow-md transition-colors cursor-pointer self-start md:self-auto"
-        >
-          <Plus className="w-18 h-18 text-white" />
-          <span>New Project</span>
-        </button>
+        <div className="flex flex-wrap items-center gap-16 self-start md:self-auto">
+          {user?.role === 'admin' && (
+            <div className="flex items-center gap-12 bg-panel border border-borderLine rounded-8 px-16 py-10">
+              <span className="text-14 text-textSecondary font-semibold">Acting as:</span>
+              <select
+                value={selectedOwnerId}
+                onChange={(e) => {
+                  setSelectedOwnerId(e.target.value);
+                }}
+                className="bg-transparent border-none text-textPrimary font-semibold text-14 cursor-pointer focus:outline-none"
+              >
+                <option value="all" className="bg-panel text-textPrimary">All Users</option>
+                {users.map(u => (
+                  <option key={u.id} value={u.id} className="bg-panel text-textPrimary">
+                    {u.name} ({u.email})
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
+          <button
+            onClick={handleOpenCreateModal}
+            className="flex items-center justify-center gap-8 px-16 py-10 bg-brand hover:bg-brand-dark text-white rounded-8 text-14 font-semibold shadow-md transition-colors cursor-pointer"
+          >
+            <Plus className="w-18 h-18 text-white" />
+            <span>New Project</span>
+          </button>
+        </div>
       </div>
 
       {/* Global error banner */}
@@ -162,7 +208,7 @@ const Dashboard = () => {
             </div>
           ))}
         </div>
-      ) : projects.length === 0 ? (
+      ) : filteredProjects.length === 0 ? (
         // --- UX REQUIREMENT: Clean, deliberate empty onboarding states ---
         <div className="flex-1 flex flex-col items-center justify-center border border-dashed border-borderLine rounded-16 py-64 px-24 text-center my-32">
           {/* Custom TaskSpace Logo representation */}
@@ -175,21 +221,27 @@ const Dashboard = () => {
               <div className="w-[10px] h-[23.5px] bg-textMuted rounded-[2px]" />
             </div>
           </div>
-          <h3 className="text-18 font-bold text-textPrimary">No projects found</h3>
+          <h3 className="text-18 font-bold text-textPrimary">
+            {selectedOwnerId === 'all' ? 'No projects found' : 'No projects found for this user'}
+          </h3>
           <p className="text-textSecondary text-14 max-w-400 mt-8 mb-24 leading-relaxed">
-            Create your first workspace to start grouping tasks and planning milestones.
+            {selectedOwnerId === 'all' 
+              ? 'Create your first workspace to start grouping tasks and planning milestones.'
+              : 'This user does not own any project workspaces yet.'}
           </p>
-          <button
-            onClick={handleOpenCreateModal}
-            className="flex items-center gap-8 px-16 py-10 bg-brand hover:bg-brand-dark text-white rounded-8 text-14 font-semibold shadow-md transition-colors cursor-pointer"
-          >
-            <Plus className="w-18 h-18 text-white" />
-            <span>Create a Project</span>
-          </button>
+          {selectedOwnerId === 'all' && (
+            <button
+              onClick={handleOpenCreateModal}
+              className="flex items-center gap-8 px-16 py-10 bg-brand hover:bg-brand-dark text-white rounded-8 text-14 font-semibold shadow-md transition-colors cursor-pointer"
+            >
+              <Plus className="w-18 h-18 text-white" />
+              <span>Create a Project</span>
+            </button>
+          )}
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-24">
-          {projects.map(project => (
+          {filteredProjects.map(project => (
             <div 
               key={project.id}
               className="bg-panel border border-borderLine hover:border-zinc-800 rounded-12 p-24 shadow-sm hover:shadow-md transition-all flex flex-col justify-between group"
@@ -313,6 +365,28 @@ const Dashboard = () => {
                   placeholder="Summarize the core target or scopes of this project..."
                 />
               </div>
+
+              {/* Assign Project Owner dropdown for admins (creation only) */}
+              {user?.role === 'admin' && !editingProject && (
+                <div className="flex flex-col gap-8 text-left">
+                  <label htmlFor="modalOwner" className="text-textSecondary text-12 font-semibold uppercase tracking-wider">
+                    Assign Project Owner
+                  </label>
+                  <select
+                    id="modalOwner"
+                    disabled={submitInFlight}
+                    value={projectOwnerId}
+                    onChange={(e) => setProjectOwnerId(e.target.value)}
+                    className="w-full bg-background border border-borderLine rounded-8 py-10 px-16 text-textPrimary text-14 focus:outline-none focus:border-brand transition-colors disabled:opacity-50"
+                  >
+                    {users.map(u => (
+                      <option key={u.id} value={u.id}>
+                        {u.name} ({u.email})
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
 
               {/* Actions Footer */}
               <div className="border-t border-borderLine pt-20 flex justify-end gap-12">

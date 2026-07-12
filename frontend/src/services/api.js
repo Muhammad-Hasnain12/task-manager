@@ -128,10 +128,11 @@ export const apiGetProjects = async () => {
  * Creates a new project.
  * @param {string} title - Project title
  * @param {string} description - Project description
+ * @param {number|null} ownerId - Optional owner ID for admin overrides
  * @returns {Promise<object>} Created project details
  */
-export const apiCreateProject = async (title, description) => {
-  const response = await api.post('/api/projects', { title, description });
+export const apiCreateProject = async (title, description, ownerId) => {
+  const response = await api.post('/api/projects', { title, description, ownerId });
   return response.data;
 };
 
@@ -202,6 +203,19 @@ export const apiUpdateTaskStatus = async (taskId, status) => {
  */
 export const apiDeleteTask = async (taskId) => {
   const response = await api.delete(`/api/tasks/${taskId}`);
+  return response.data;
+};
+
+/* ==========================================================================
+   ADMIN API CALLS
+   ========================================================================== */
+
+/**
+ * Fetches all registered users (admin audit tool).
+ * @returns {Promise<object>} User list
+ */
+export const apiGetAdminUsers = async () => {
+  const response = await api.get('/api/admin/users');
   return response.data;
 };
 
