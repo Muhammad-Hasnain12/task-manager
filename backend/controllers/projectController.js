@@ -9,6 +9,7 @@ const mapProjectResponse = (project) => {
         title: project.title,
         description: project.description,
         owner: project.ownerId, // Map Prisma's "ownerId" foreign key to the "owner" field expected by the frontend
+        ownerDetails: project.owner ? { name: project.owner.name, email: project.owner.email } : null,
         createdAt: project.createdAt,
         updatedAt: project.updatedAt,
     };
@@ -39,12 +40,15 @@ const createProject = async (req, res) => {
     }
 };
 
-// GET all projects belonging to the logged-in user
+// GET all projects (all for admin, user's own for standard user)
 const getProjects = async (req, res) => {
     try {
-        // Query projects owned by the currently authenticated user
+        const isAdmin = req.user.role === 'admin';
+
+        // Query projects
         const projects = await prisma.project.findMany({
-            where: { ownerId: req.user.id },
+            where: isAdmin ? {} : { ownerId: req.user.id },
+            include: isAdmin ? { owner: { select: { name: true, email: true } } } : undefined,
             orderBy: { createdAt: 'desc' }, // Order by creation date descending
         });
 
@@ -66,8 +70,21 @@ const updateProject = async (req, res) => {
         const projectIdInt = parseInt(projectId, 10);
         const { title, description } = req.body;
 
-        // Perform atomic update via Prisma
-        // If a project is not found with that ID, Prisma throws a P2025 error which is caught in catch block
+        // Find the project first to verify ownership
+        const project = await prisma.project.findUnique({
+            where: { id: projectIdInt },
+        });
+
+        if (!project) {
+            return res.status(404).json({ message: 'Project not found' });
+        }
+
+        // Enforce role-based authorization check
+        if (req.user.role !== 'admin' && project.ownerId !== req.user.id) {
+            return res.status(403).json({ message: 'Forbidden: You do not own this project' });
+        }
+
+        // Perform update via Prisma
         const updatedProject = await prisma.project.update({
             where: { id: projectIdInt },
             data: { title, description },
@@ -78,10 +95,6 @@ const updateProject = async (req, res) => {
             project: mapProjectResponse(updatedProject),
         });
     } catch (error) {
-        // Handle RecordNotFound specifically to return 404 (same behavior as Mongoose)
-        if (error.code === 'P2025') {
-            return res.status(404).json({ message: 'Project not found' });
-        }
         res.status(500).json({ message: 'Server error', error: error.message });
     }
 };
@@ -93,6 +106,20 @@ const deleteProject = async (req, res) => {
         // Convert string ID from URL params to an integer
         const projectIdInt = parseInt(projectId, 10);
 
+        // Find the project first to verify ownership
+        const project = await prisma.project.findUnique({
+            where: { id: projectIdInt },
+        });
+
+        if (!project) {
+            return res.status(404).json({ message: 'Project not found' });
+        }
+
+        // Enforce role-based authorization check
+        if (req.user.role !== 'admin' && project.ownerId !== req.user.id) {
+            return res.status(403).json({ message: 'Forbidden: You do not own this project' });
+        }
+
         // Delete the project
         // Note: Task cascades are handled automatically by PostgreSQL due to schema "onDelete: Cascade"
         await prisma.project.delete({
@@ -101,10 +128,6 @@ const deleteProject = async (req, res) => {
 
         res.status(200).json({ message: 'Project deleted' });
     } catch (error) {
-        // Handle RecordNotFound for 404 response
-        if (error.code === 'P2025') {
-            return res.status(404).json({ message: 'Project not found' });
-        }
         res.status(500).json({ message: 'Server error', error: error.message });
     }
 };

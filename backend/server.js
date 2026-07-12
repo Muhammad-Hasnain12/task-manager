@@ -12,6 +12,7 @@ require('dotenv').config();
 const authRoutes = require('./routes/authRoutes');
 const projectRoutes = require('./routes/projectRoutes');
 const taskRoutes = require('./routes/taskRoutes');
+const adminRoutes = require('./routes/adminRoutes');
 
 // Create the express application
 // Note: unlike our old Mongoose setup, there's no explicit database "connect" step here.
@@ -35,6 +36,7 @@ app.get('/', (req, res) => {
 app.use('/api/auth', authRoutes);
 app.use('/api/projects', projectRoutes);
 app.use('/api/tasks', taskRoutes);
+app.use('/api/admin', adminRoutes);
 
 // Use PORT from .env if available, otherwise default to 5000
 const PORT = process.env.PORT || 5000;

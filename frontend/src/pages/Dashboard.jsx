@@ -197,12 +197,19 @@ const Dashboard = () => {
               {/* Card content */}
               <div className="text-left flex flex-col gap-12">
                 <div className="flex items-start justify-between gap-16">
-                  <Link 
-                    to={`/project/${project.id}`}
-                    className="text-18 font-bold tracking-tight text-textPrimary group-hover:text-brand transition-colors line-clamp-1 leading-snug"
-                  >
-                    {project.title}
-                  </Link>
+                  <div className="flex flex-col gap-4 text-left">
+                    <Link 
+                      to={`/project/${project.id}`}
+                      className="text-18 font-bold tracking-tight text-textPrimary group-hover:text-brand transition-colors line-clamp-1 leading-snug"
+                    >
+                      {project.title}
+                    </Link>
+                    {user?.role === 'admin' && project.ownerDetails && (
+                      <span className="text-12 font-medium text-brand">
+                        Owned by: {project.ownerDetails.name}
+                      </span>
+                    )}
+                  </div>
                   {/* Outer Link */}
                   <Link 
                     to={`/project/${project.id}`}

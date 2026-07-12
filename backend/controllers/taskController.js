@@ -23,6 +23,20 @@ const createTask = async (req, res) => {
         // Convert string projectId (from JSON body) to an integer, since our schema uses Int IDs
         const projectIdInt = parseInt(projectId, 10);
 
+        // Find parent project to verify ownership
+        const project = await prisma.project.findUnique({
+            where: { id: projectIdInt },
+        });
+
+        if (!project) {
+            return res.status(404).json({ message: 'Project not found' });
+        }
+
+        // Verify authorization
+        if (req.user.role !== 'admin' && project.ownerId !== req.user.id) {
+            return res.status(403).json({ message: 'Forbidden: You do not own this project' });
+        }
+
         // Create the task record
         const newTask = await prisma.task.create({
             data: {
@@ -51,6 +65,20 @@ const getTasksByProject = async (req, res) => {
         // Convert string projectId (from URL params) to an integer
         const projectIdInt = parseInt(projectId, 10);
 
+        // Find parent project to verify ownership
+        const project = await prisma.project.findUnique({
+            where: { id: projectIdInt },
+        });
+
+        if (!project) {
+            return res.status(404).json({ message: 'Project not found' });
+        }
+
+        // Verify authorization
+        if (req.user.role !== 'admin' && project.ownerId !== req.user.id) {
+            return res.status(403).json({ message: 'Forbidden: You do not own this project' });
+        }
+
         // Query database using Prisma
         const tasks = await prisma.task.findMany({
             where: { projectId: projectIdInt },
@@ -75,6 +103,21 @@ const updateTaskStatus = async (req, res) => {
         const taskIdInt = parseInt(taskId, 10);
         const { status } = req.body;
 
+        // Find the task and its parent project
+        const task = await prisma.task.findUnique({
+            where: { id: taskIdInt },
+            include: { project: true },
+        });
+
+        if (!task) {
+            return res.status(404).json({ message: 'Task not found' });
+        }
+
+        // Verify authorization
+        if (req.user.role !== 'admin' && task.project.ownerId !== req.user.id) {
+            return res.status(403).json({ message: 'Forbidden: You do not own this project' });
+        }
+
         // Perform the update
         const updatedTask = await prisma.task.update({
             where: { id: taskIdInt },
@@ -87,10 +130,6 @@ const updateTaskStatus = async (req, res) => {
         });
 
     } catch (error) {
-        // Return 404 if the task doesn't exist
-        if (error.code === 'P2025') {
-            return res.status(404).json({ message: 'Task not found' });
-        }
         res.status(500).json({ message: 'Server error', error: error.message });
     }
 };
@@ -102,6 +141,21 @@ const deleteTask = async (req, res) => {
         // Convert string taskId (from URL params) to an integer
         const taskIdInt = parseInt(taskId, 10);
 
+        // Find the task and its parent project
+        const task = await prisma.task.findUnique({
+            where: { id: taskIdInt },
+            include: { project: true },
+        });
+
+        if (!task) {
+            return res.status(404).json({ message: 'Task not found' });
+        }
+
+        // Verify authorization
+        if (req.user.role !== 'admin' && task.project.ownerId !== req.user.id) {
+            return res.status(403).json({ message: 'Forbidden: You do not own this project' });
+        }
+
         // Perform the deletion
         await prisma.task.delete({
             where: { id: taskIdInt },
@@ -110,10 +164,6 @@ const deleteTask = async (req, res) => {
         res.status(200).json({ message: 'Task deleted' });
 
     } catch (error) {
-        // Return 404 if task wasn't found
-        if (error.code === 'P2025') {
-            return res.status(404).json({ message: 'Task not found' });
-        }
         res.status(500).json({ message: 'Server error', error: error.message });
     }
 };

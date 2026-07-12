@@ -48,7 +48,14 @@ const Navbar = () => {
               {initials || <User className="w-16 h-16" />}
             </div>
             <div className="flex flex-col text-left">
-              <span className="text-textPrimary font-semibold text-14 leading-tight">{user.name}</span>
+              <div className="flex items-center gap-6">
+                <span className="text-textPrimary font-semibold text-14 leading-tight">{user.name}</span>
+                {user.role === 'admin' && (
+                  <span className="px-6 py-2 rounded-4 bg-red-950/60 border border-red-800/40 text-red-400 text-10 font-bold uppercase tracking-wider">
+                    Admin
+                  </span>
+                )}
+              </div>
               <span className="text-textMuted text-12 leading-tight mt-4">{user.email}</span>
             </div>
           </div>

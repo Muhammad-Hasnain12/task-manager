@@ -27,7 +27,7 @@ const protect = (req, res, next) => {
         // decoded now contains whatever we originally put in the token during login/signup
         // remember: jwt.sign({ userId: user._id }, ...) - so decoded.userId exists
         // We attach it to req.user so our actual controller functions can access "who's logged in"
-        req.user = { id: decoded.userId };
+        req.user = { id: decoded.userId, role: decoded.role };
 
         // Everything checked out - let the request continue to the actual controller
         next();

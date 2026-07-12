@@ -38,7 +38,7 @@ const signup = async (req, res) => {
         // Create a JWT token for the new user
         // Note: MongoDB's "_id" becomes Prisma's "id"
         const token = jwt.sign(
-            { userId: newUser.id },
+            { userId: newUser.id, role: newUser.role },
             process.env.JWT_SECRET,
             { expiresIn: '7d' }
         );
@@ -50,6 +50,7 @@ const signup = async (req, res) => {
                 id: newUser.id,
                 name: newUser.name,
                 email: newUser.email,
+                role: newUser.role,
             },
         });
 
@@ -81,7 +82,7 @@ const login = async (req, res) => {
 
         // Create JWT token using Prisma UUID "id"
         const token = jwt.sign(
-            { userId: user.id },
+            { userId: user.id, role: user.role },
             process.env.JWT_SECRET,
             { expiresIn: '7d' }
         );
@@ -93,6 +94,7 @@ const login = async (req, res) => {
                 id: user.id,
                 name: user.name,
                 email: user.email,
+                role: user.role,
             },
         });
 
@@ -112,6 +114,7 @@ const getProfile = async (req, res) => {
                 id: true,
                 name: true,
                 email: true,
+                role: true,
                 createdAt: true,
                 updatedAt: true,
             },
