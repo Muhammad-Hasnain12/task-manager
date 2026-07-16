@@ -357,7 +357,7 @@ const Dashboard = () => {
                 </label>
                 <textarea
                   id="modalDesc"
-                  maxLength={200}
+                  maxLength={1000}
                   disabled={submitInFlight}
                   value={projectDescription}
                   onChange={(e) => setProjectDescription(e.target.value)}
